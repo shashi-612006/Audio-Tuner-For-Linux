@@ -18,9 +18,11 @@ class Profiler:
             "vendor_name": "Unknown",
             "chip_id": "Unknown",
             "distro": self.get_distro(),
+            "audio_server": "Unknown",
             "missing_deps": []
         }
 
+   
 
     def get_distro(self):
         try:
@@ -29,7 +31,6 @@ class Profiler:
             return platform.system()
 
     def detect_init(self):
-        """Detects init system via PID 1 (more reliable)."""
         try:
             init = subprocess.check_output(
                 ["ps", "-p", "1", "-o", "comm="],
@@ -39,6 +40,32 @@ class Profiler:
         except Exception:
             pass
         return self.profile["init_system"]
+
+    
+
+    def detect_audio_server(self):
+        try:
+            output = subprocess.check_output(["ps", "-A"], text=True).lower()
+            if "pipewire" in output:
+                self.profile["audio_server"] = "PipeWire"
+            elif "pulseaudio" in output:
+                self.profile["audio_server"] = "PulseAudio (Legacy)"
+            else:
+                self.profile["audio_server"] = "ALSA/Unknown"
+        except Exception:
+            self.profile["audio_server"] = "Unknown"
+
+    def get_upgrade_command(self):
+        distro_cmds = {
+            "apt": "sudo apt update && sudo apt install pipewire-audio wireplumber",
+            "pacman": "sudo pacman -S pipewire-pulse pipewire-alsa pipewire-jack wireplumber",
+            "dnf": "sudo dnf swap pulseaudio pipewire-pulseaudio --allowerasing"
+        }
+
+        for manager, cmd in distro_cmds.items():
+            if shutil.which(manager):
+                return cmd
+        return "Manual installation of PipeWire recommended."
 
     
 
@@ -72,35 +99,9 @@ class Profiler:
 
         return "Please install missing packages manually."
 
-    def detect_audio_server(self):
-        """Identifies if the system is using PipeWire or PulseAudio."""
-        try:
-            
-            output = subprocess.check_output(["ps", "-A"], text=True)
-            if "pipewire" in output:
-                self.profile["audio_server"] = "PipeWire"
-            elif "pulseaudio" in output:
-                self.profile["audio_server"] = "PulseAudio (Legacy)"
-            else:
-                self.profile["audio_server"] = "None/ALSA"
-        except:
-            self.profile["audio_server"] = "Unknown"
+    
 
-    def get_upgrade_command(self):
-        """Generates the command to swap PulseAudio for PipeWire."""
-        distro_cmds = {
-            "apt": "sudo apt update && sudo apt install pipewire-audio wireplumber",
-            "pacman": "sudo pacman -S pipewire-pulse pipewire-alsa pipewire-jack wireplumber",
-            "dnf": "sudo dnf swap pulseaudio pipewire-pulseaudio --allowerasing"
-        }
-        
-        for manager, cmd in distro_cmds.items():
-            if shutil.which(manager):
-                return cmd
-        return "Manual installation of PipeWire recommended."
-        
     def detect_hardware(self):
-        """Detects wireless/network chipset vendor."""
         try:
             output = subprocess.check_output(["lspci", "-nn"], text=True)
             for line in output.splitlines():
@@ -114,16 +115,16 @@ class Profiler:
         except Exception as e:
             self.profile["vendor_name"] = f"Error: {e}"
 
-    
+   
 
     def run_audit(self):
         self.detect_init()
+        self.detect_audio_server()
         self.detect_hardware()
         self.check_dependencies()
         return self.profile
 
     
-
     def print_report(self):
         chip = self.profile["chip_id"]
         chip_display = chip[:45] + "..." if len(chip) > 45 else chip
@@ -133,9 +134,14 @@ class Profiler:
         print("═" * 50)
         print(f"[*] OS Distro    : {self.profile['distro']}")
         print(f"[*] Init System  : {self.profile['init_system']}")
+        print(f"[*] Audio Server : {self.profile['audio_server']}")
         print(f"[*] Chip Vendor  : {self.profile['vendor_name']}")
         print(f"[*] Device ID    : {chip_display}")
         print("─" * 50)
+
+        if self.profile["audio_server"] != "PipeWire":
+            print("[!] PipeWire not detected!")
+            print(f"[?] Suggested Fix: {self.get_upgrade_command()}")
 
         if self.profile["missing_deps"]:
             print(f"[!] Missing: {', '.join(self.profile['missing_deps'])}")
@@ -144,7 +150,6 @@ class Profiler:
             print("[✓] System Environment: READY")
 
         print("═" * 50 + "\n")
-
 
 
 if __name__ == "__main__":
