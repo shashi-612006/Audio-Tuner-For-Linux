@@ -21,7 +21,6 @@ class Profiler:
             "missing_deps": []
         }
 
-    # ---------------- System Info ---------------- #
 
     def get_distro(self):
         try:
@@ -41,7 +40,7 @@ class Profiler:
             pass
         return self.profile["init_system"]
 
-    # ---------------- Dependency Checks ---------------- #
+    
 
     def check_dependencies(self):
         deps = {
@@ -55,7 +54,7 @@ class Profiler:
                 self.profile["missing_deps"].append(pkg)
 
         try:
-            import psutil  # noqa: F401
+            import psutil  
         except ImportError:
             self.profile["missing_deps"].append("python3-psutil")
 
@@ -73,8 +72,33 @@ class Profiler:
 
         return "Please install missing packages manually."
 
-    # ---------------- Hardware Detection ---------------- #
+    def detect_audio_server(self):
+        """Identifies if the system is using PipeWire or PulseAudio."""
+        try:
+            
+            output = subprocess.check_output(["ps", "-A"], text=True)
+            if "pipewire" in output:
+                self.profile["audio_server"] = "PipeWire"
+            elif "pulseaudio" in output:
+                self.profile["audio_server"] = "PulseAudio (Legacy)"
+            else:
+                self.profile["audio_server"] = "None/ALSA"
+        except:
+            self.profile["audio_server"] = "Unknown"
 
+    def get_upgrade_command(self):
+        """Generates the command to swap PulseAudio for PipeWire."""
+        distro_cmds = {
+            "apt": "sudo apt update && sudo apt install pipewire-audio wireplumber",
+            "pacman": "sudo pacman -S pipewire-pulse pipewire-alsa pipewire-jack wireplumber",
+            "dnf": "sudo dnf swap pulseaudio pipewire-pulseaudio --allowerasing"
+        }
+        
+        for manager, cmd in distro_cmds.items():
+            if shutil.which(manager):
+                return cmd
+        return "Manual installation of PipeWire recommended."
+        
     def detect_hardware(self):
         """Detects wireless/network chipset vendor."""
         try:
@@ -90,7 +114,7 @@ class Profiler:
         except Exception as e:
             self.profile["vendor_name"] = f"Error: {e}"
 
-    # ---------------- Main Audit ---------------- #
+    
 
     def run_audit(self):
         self.detect_init()
@@ -98,7 +122,7 @@ class Profiler:
         self.check_dependencies()
         return self.profile
 
-    # ---------------- Pretty Output ---------------- #
+    
 
     def print_report(self):
         chip = self.profile["chip_id"]
@@ -122,7 +146,7 @@ class Profiler:
         print("═" * 50 + "\n")
 
 
-# Standalone testing mode
+
 if __name__ == "__main__":
     profiler = Profiler()
     profiler.run_audit()
