@@ -1,17 +1,16 @@
-# 🎧 AirTIGHT – Linux Audio Stability Optimizer
+🎧 AirTIGHT – Linux Audio Stability Optimizer
 
 AirTIGHT is a smart system tool that automatically detects and fixes common causes of Bluetooth audio stutter, pops, and latency issues on Linux.
 
 It analyzes your hardware, monitors real-time performance, and applies safe system-level optimizations to keep your audio smooth — even under heavy CPU or Wi-Fi load.
 
-# 🚀 What Problems Does AirTIGHT Fix?
+🚀 What Problems Does AirTIGHT Fix?
 Issue	Cause	AirTIGHT Solution
 Bluetooth audio stutter	Wi-Fi / Bluetooth antenna conflict	Tunes driver coexistence settings
 Audio crackle / pop after silence	Audio device power saving	Disables aggressive audio sleep
 Stutter during heavy load	CPU scheduler interference	Boosts audio process priority
 Random glitches	Poor default system tuning	Applies adaptive optimizations
-
-# 🧠 How It Works
+🧠 How It Works
 
 System Audit
 Detects Linux distro, init system, chipset vendor, and audio stack.
@@ -25,7 +24,7 @@ Determines the most likely cause of instability.
 Targeted Fixes
 Applies only the necessary system optimizations.
 
-# 🛠 Installation
+🛠 Installation
 git clone https://github.com/shashi-612006/Audio-Tuner-For-Linux.git
 cd Audio-Tuner-For-Linux
 sudo bash setup.sh
@@ -35,7 +34,7 @@ After installation, run:
 
 airtight
 
-# ⚙️ What the Installer Does
+⚙️ What the Installer Does
 
 ✔ Installs required dependencies
 ✔ Places AirTIGHT in /opt/airtight
@@ -43,7 +42,7 @@ airtight
 ✔ Detects init system (systemd / OpenRC / runit)
 ✔ Optionally sets up a background service
 
-# 🖥 Requirements
+🖥 Requirements
 
 Linux system with PipeWire audio
 
@@ -53,7 +52,7 @@ Bluetooth audio device (for BT optimizations)
 
 Root privileges for system-level tweaks
 
-# 📦 Project Structure
+📦 Project Structure
 src/
  ├── main.py              # Control loop
  ├── profiler.py          # Hardware & system detection
@@ -64,9 +63,10 @@ src/
       ├── audio_fix.py
       └── scheduler.py
 
-# ⚠️ Safety Notes
+⚠️ Safety Notes
 
 AirTIGHT only modifies well-known kernel and system parameters used in audio optimization.
+
 All changes are:
 
 Logged
@@ -77,11 +77,11 @@ Reversible
 
 A reboot may be required for some kernel-level changes.
 
-# 🤝 Contributing
+🤝 Contributing
 
 Pull requests and issue reports are welcome!
 If you test AirTIGHT on different hardware, your feedback helps improve compatibility.
 
-# 📜 License
+📜 License
 
 MIT License – Free to use and modify.
