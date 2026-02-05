@@ -2,19 +2,22 @@ import subprocess
 import os
 import shutil
 
+
 class BluetoothFixer:
     def __init__(self, profile):
         self.profile = profile
         self.init = profile.get("init_system", "systemd").lower()
         self.vendor = profile.get("vendor_name", "Unknown")
+        self.conf_path = "/etc/modprobe.d/airtight_coex.conf"
 
+   
     def apply_coex_fix(self):
-        print(f"[*] Detecting coexistence strategy for {self.vendor}...")
+        print(f"[*] Evaluating Bluetooth/WiFi coexistence for {self.vendor}...")
 
         fix_map = {
             "Realtek": (
                 "rtw88_core",
-                "# AirTIGHT Bluetooth/WiFi Coex Fix\n"
+                "# AirTIGHT Coexistence Fix\n"
                 "options rtw88_core disable_lps_deep=y\n"
                 "options rtw_pci disable_aspm=y\n"
             ),
@@ -30,16 +33,23 @@ class BluetoothFixer:
             )
         }
 
-        if self.vendor in fix_map:
-            module, config = fix_map[self.vendor]
-            self._write_modprobe_conf("airtight_coex.conf", config)
-            self._reload_module_if_loaded(module)
-        else:
-            print(f"[!] No known coex fix for {self.vendor}. Skipping.")
+        if self.vendor not in fix_map:
+            print("[!] No known coexistence tweaks for this chipset.")
+            return
 
+        module, config = fix_map[self.vendor]
+
+        if self._config_already_applied(config):
+            print("[✓] Coexistence fix already applied. Skipping.")
+            return
+
+        self._write_modprobe_conf(config)
+        self._reload_module_if_loaded(module)
+
+    
 
     def restart_bluetooth(self):
-        print(f"[*] Restarting Bluetooth via {self.init}...")
+        print(f"[*] Restarting Bluetooth service via {self.init}...")
 
         commands = {
             "systemd": ["systemctl", "restart", "bluetooth"],
@@ -49,30 +59,35 @@ class BluetoothFixer:
 
         cmd = commands.get(self.init)
         if cmd and shutil.which(cmd[0]):
-            try:
-                subprocess.run(cmd, check=True)
-                print("[✓] Bluetooth service restarted.")
-            except subprocess.CalledProcessError:
-                print("[!] Failed to restart Bluetooth automatically.")
+            subprocess.run(cmd, stderr=subprocess.DEVNULL)
+            print("[✓] Bluetooth service restarted.")
         else:
-            print("[!] Could not detect service manager. Restart manually.")
+            print("[!] Could not detect service manager. Restart manually if needed.")
 
+   
+    def _config_already_applied(self, new_config):
+        """Check if config file already contains our settings."""
+        if not os.path.exists(self.conf_path):
+            return False
 
-    def _write_modprobe_conf(self, filename, content):
-        path = f"/etc/modprobe.d/{filename}"
-        backup = path + ".bak"
+        with open(self.conf_path, "r") as f:
+            existing = f.read()
+        return new_config.strip() in existing.strip()
+
+    def _write_modprobe_conf(self, content):
+        backup = self.conf_path + ".bak"
 
         try:
-            if os.path.exists(path) and not os.path.exists(backup):
-                shutil.copy(path, backup)
+            if os.path.exists(self.conf_path) and not os.path.exists(backup):
+                shutil.copy(self.conf_path, backup)
                 print(f"[*] Backup created: {backup}")
 
-            with open(path, "w") as f:
+            with open(self.conf_path, "w") as f:
                 f.write(content)
 
-            print(f"[✓] Config written: {path}")
-        except PermissionError:
-            print("[!] Permission denied. Run AirTIGHT with sudo.")
+            print(f"[✓] Coexistence config written: {self.conf_path}")
+        except Exception as e:
+            print(f"[!] Failed to write modprobe config: {e}")
 
     def _reload_module_if_loaded(self, module_name):
         try:
@@ -82,15 +97,6 @@ class BluetoothFixer:
                 subprocess.run(["modprobe", "-r", module_name], stderr=subprocess.DEVNULL)
                 subprocess.run(["modprobe", module_name], stderr=subprocess.DEVNULL)
             else:
-                print(f"[!] Module {module_name} not currently loaded. Skipping reload.")
+                print(f"[!] Module {module_name} not loaded. Reboot may be required.")
         except Exception:
-            print("[!] Could not verify module state.")
-
-
-if __name__ == "__main__":
-    dummy_profile = {"vendor_name": "Realtek", "init_system": "systemd"}
-    fixer = BluetoothFixer(dummy_profile)
-    fixer.apply_coex_fix()
-    fixer.restart_bluetooth()
-
-
+            print("[!] Could not verify kernel module state.")
