@@ -113,7 +113,7 @@ If you test AirTIGHT on different hardware, your feedback helps improve compatib
 ## 🤝 Contributors
 
 - **Mididoddi Shashank** – Project lead & core logic  
-- **karthika** – Development & testing support
+- **Deshetti Karthika** – Development & testing support
 
 ## 📜 License
 
