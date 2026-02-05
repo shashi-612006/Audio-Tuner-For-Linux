@@ -57,7 +57,6 @@ class BluetoothFixer:
         else:
             print("[!] Could not detect service manager. Restart manually.")
 
-    # ---------------- Helpers ---------------- #
 
     def _write_modprobe_conf(self, filename, content):
         path = f"/etc/modprobe.d/{filename}"
