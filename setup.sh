@@ -1,33 +1,28 @@
-
 #!/bin/bash
-
 
 set -e
 
 BAR="============================================================"
+INSTALL_DIR="/opt/airtight"
+BIN_LINK="/usr/local/bin/airtight"
 
 echo "$BAR"
 echo "   AirTIGHT: CROSS-DISTRO INSTALLER"
 echo "$BAR"
 
+
 if [ "$EUID" -ne 0 ]; then
-  echo "[!] Please run as root (sudo ./setup.sh)"
+  echo "[!] Please run as root (sudo bash setup.sh)"
   exit 1
 fi
 
-
-INSTALL_DIR="/opt/airtight"
-BIN_LINK="/usr/local/bin/airtight"
-
 echo "[*] Installing AirTIGHT to $INSTALL_DIR ..."
 mkdir -p $INSTALL_DIR
-
-
 cp -r src $INSTALL_DIR/
 cp README.md $INSTALL_DIR/ 2>/dev/null || true
 
+echo "[*] Detecting package manager..."
 
-echo "[*] Detecting Package Manager..."
 if command -v pacman &> /dev/null; then
     PM="pacman -S --needed --noconfirm"
     DEPS="python-psutil pciutils alsa-utils pipewire wireplumber"
@@ -38,24 +33,25 @@ elif command -v dnf &> /dev/null; then
     PM="dnf install -y"
     DEPS="python3-psutil pciutils alsa-utils pipewire wireplumber"
 else
-    echo "[!] No supported package manager found."
+    echo "[!] Unsupported package manager. Install dependencies manually."
     exit 1
 fi
 
 echo "[*] Installing dependencies: $DEPS"
 $PM $DEPS
 
-echo "[*] Creating launcher..."
+
+echo "[*] Creating 'airtight' command..."
 cat <<EOF > $BIN_LINK
 #!/bin/bash
-sudo python3 -m src.main --working-dir $INSTALL_DIR
+sudo python3 -m src.main
 EOF
 
 chmod +x $BIN_LINK
 
-# 5. Init System Detection
+# 5️⃣ Detect Init System
 INIT=$(ps -p 1 -o comm=)
-echo "[*] Detected Init System: $INIT"
+echo "[*] Detected init system: $INIT"
 
 case $INIT in
   systemd)
@@ -76,6 +72,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 EOF
     systemctl daemon-reload
+    echo "[*] To enable auto-start: sudo systemctl enable --now airtight"
     ;;
     
   runit)
@@ -87,6 +84,7 @@ EOF
 exec python3 $INSTALL_DIR/src/main.py
 EOF
     chmod +x $SERVICE_PATH/run
+    echo "[*] Enable with: ln -s /etc/sv/airtight /var/service/"
     ;;
     
   openrc)
@@ -98,6 +96,7 @@ command="/usr/bin/python3"
 command_args="$INSTALL_DIR/src/main.py"
 EOF
     chmod +x $SERVICE_PATH
+    echo "[*] Enable with: rc-update add airtight default"
     ;;
     
   *)
