@@ -1,5 +1,10 @@
 # 🎧 AirTIGHT – Linux Audio Stability Optimizer
 
+![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/platform-Linux-blue)
+![Python](https://img.shields.io/badge/python-3.8%2B-yellow)
+
+
 **AirTIGHT** is a smart system tool that automatically detects and fixes common causes of Bluetooth audio stutter, pops, and latency issues on Linux.
 
 It analyzes your hardware, monitors real-time performance, and applies safe system-level optimizations to keep your audio smooth — even under heavy CPU or Wi-Fi load.
