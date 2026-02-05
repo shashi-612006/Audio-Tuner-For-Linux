@@ -24,8 +24,13 @@ class PerformanceMonitor:
             total = 0
             for line in output.splitlines():
                 parts = line.split()
-                if len(parts) > 5 and parts[-1].isdigit():
-                    total += int(parts[-1])
+                for line in output.splitlines():
+                    if "ERR" in line or "xrun" in line.lower():
+                        parts = line.split()
+                        for p in parts:
+                            if p.isdigit():
+                                total += int(p)
+
             return total
         except Exception:
             return 0
